@@ -83,7 +83,7 @@ private static HttpResponseMessage SuccessResponse(HttpRequestMessage req, Trace
 
 private static string GetExpirationTime()
 {
-    return DateTimeOffset.Now.AddHours(1).ToUnixTimeSeconds().ToString();
+    return DateTimeOffset.Now.AddHours(1).ToUnixTimeMilliseconds().ToString();
 }
 
 private static string Header()
@@ -103,7 +103,7 @@ private static string Payload(string headerJson, string claimsJson)
 
 private static string Signed(string key, string payload)
 {
-    return payload + "." + Convert.ToBase64String(HMAC256(Bytes(key), Bytes(payload)));
+    return payload + "." + Base64UrlEncode(HMAC256(Bytes(key), Bytes(payload)));
 }
 
 private static byte[] Bytes(string src)
@@ -118,7 +118,12 @@ private static string UTF8(byte[] bytes)
 
 private static string Base64UrlEncode(string src)
 {
-	return Convert.ToBase64String(Bytes(src))
+	return Base64UrlEncode(Bytes(src));
+}
+
+private static string Base64UrlEncode(byte[] bytes)
+{
+	return Convert.ToBase64String(bytes)
 		.Replace('+', '-')
 		.Replace('/', '_')
 		.Replace("=", "");
@@ -196,4 +201,3 @@ private class AuthResponse
         Token = token;
     }
 }
-
