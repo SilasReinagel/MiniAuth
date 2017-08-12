@@ -83,7 +83,7 @@ private static HttpResponseMessage SuccessResponse(HttpRequestMessage req, Trace
 
 private static string GetExpirationTime()
 {
-    return DateTimeOffset.Now.AddHours(1).ToUnixTimeMilliseconds().ToString();
+    return DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds().ToString();
 }
 
 private static string Header()
