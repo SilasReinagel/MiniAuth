@@ -10,25 +10,32 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
 {
     var acc = await req.Content.ReadAsAsync<Account>();
     
-    var issues = GetAccountIssues(acc);    
-    return issues.Count > 0 
-        ? ErrorResponse(req, log, issues)
-        : SuccessResponse(req, log, acc);
+    var reqIssues = GetRequestIssues(acc);
+    if (reqIssues.Count > 0)
+        return BadRequest(req, log, reqIssues);    
+    if (!UsernameIsAvailable(acc.Username))
+        return UsernameTaken(req, log, acc.Username);
+    return SuccessResponse(req, log, acc);
 }
 
-private static List<string> GetAccountIssues(Account acc)
+private static List<string> GetRequestIssues(Account acc)
 {
     var issues = new List<string>();
     if (acc.Username == null || acc.Username.Length == 0)
         issues.Add("Username required");
-    if (!UsernameIsAvailable(acc.Username))
-        issues.Add("That username is already taken");
     if (acc.Password == null || acc.Password.Length == 0)
         issues.Add("Password required");
     return issues;
 }
 
-private static HttpResponseMessage ErrorResponse(HttpRequestMessage req, TraceWriter log, List<string> issues)
+private static HttpResponseMessage UsernameTaken(HttpRequestMessage req, TraceWriter log, string userName)
+{
+    var msg = $"Username taken: '{userName}'";
+    log.Error(msg);
+    return req.CreateResponse(HttpStatusCode.Conflict, new { ErrorMessage = msg }, Json);
+}
+
+private static HttpResponseMessage BadRequest(HttpRequestMessage req, TraceWriter log, List<string> issues)
 {
     var msg = string.Join(" AND ", issues);
     log.Error($"Invalid request errors: {msg}");
