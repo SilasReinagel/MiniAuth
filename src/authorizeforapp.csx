@@ -45,8 +45,8 @@ private static AuthResult Authorize(AuthRequest req)
         accs = conn.Query<Account>(@"SELECT UserId, Username, Password FROM Auth.Accounts WHERE IsDisabled = 0 AND Username = @username",
             new { username = req.Username }).ToList();
     return accs.Count != 1 
-        ? new AuthResult(false, "")
-        : new AuthResult(BCrypt.Net.BCrypt.Verify(req.Password, accs.Single().Password), accs.Single().UserId);
+        ? new AuthResult(false, "", req.Username)
+        : new AuthResult(BCrypt.Net.BCrypt.Verify(req.Password, accs.Single().Password), accs.Single().UserId, req.Username);
 }
 
 private static AppResult GetApp(string appName)
@@ -77,7 +77,7 @@ private static HttpResponseMessage SuccessResponse(HttpRequestMessage req, Trace
 {
     log.Info($"Successful login for {result.UserId}");
     var expiration = GetExpirationTime();
-    var token = Signed(secret, Payload(Header(), Claims(result.UserId, expiration)));
+    var token = Signed(secret, Payload(Header(), Claims(result.UserId, result.Username, expiration)));
     return req.CreateResponse(HttpStatusCode.OK, new AuthResponse(expiration, token), Json);
 }
 
@@ -91,9 +91,9 @@ private static string Header()
     return "{\"typ\":\"JWT\",\"alg\":\"HS256\"}";
 }
 
-private static string Claims(string userId, string expiresAtUtc)
+private static string Claims(string userId, string username, string expiresAtUtc)
 {
-    return $"{{\"userId\":\"{userId}\", \"exp\": {expiresAtUtc} }}";
+    return $"{{\"sub\":\"{userId}\", \"exp\": {expiresAtUtc}, \"username\": {username}}}";
 }
 
 private static string Payload(string headerJson, string claimsJson)
@@ -180,13 +180,15 @@ private class AppResult
 
 private class AuthResult
 {
-    public string UserId { get; private set; }
     public bool IsAuthorized { get; private set; }
+    public string UserId { get; private set; }
+    public string Username { get; private set; }
 
-    public AuthResult(bool isAuthorized, string userId)
+    public AuthResult(bool isAuthorized, string userId, string username)
     {
         IsAuthorized = isAuthorized;
         UserId = userId;
+        Username = username;
     }
 }
 
