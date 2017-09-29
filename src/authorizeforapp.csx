@@ -93,7 +93,7 @@ private static string Header()
 
 private static string Claims(string userId, string username, string expiresAtUtc)
 {
-    return $"{{\"sub\":\"{userId}\", \"exp\": {expiresAtUtc}, \"username\": {username}}}";
+    return $"{{\"sub\":\"{userId}\", \"exp\": {expiresAtUtc}, \"username\": \"{username}\"}}";
 }
 
 private static string Payload(string headerJson, string claimsJson)
